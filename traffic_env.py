@@ -42,9 +42,9 @@ class TrafficEnv(gym.Env):
             # Add edge_attr if used
         }
         if config.USE_EDGE_FEATURES:
-             # Assuming edge index shape is known/fixed
-             num_edges = state_builder._edge_index.shape[1] if state_builder._edge_index is not None else 8 # Default guess
-             obs_space_dict['edge_attr'] = spaces.Box(low=0.0, high=1.0, shape=(num_edges, config.NUM_EDGE_FEATURES), dtype=np.float32)
+            # Assuming edge index shape is known/fixed
+            num_edges = state_builder._edge_index.shape[1] if state_builder._edge_index is not None else 8 # Default guess
+            obs_space_dict['edge_attr'] = spaces.Box(low=0.0, high=1.0, shape=(num_edges, config.NUM_EDGE_FEATURES), dtype=np.float32)
 
         self.observation_space = spaces.Dict(obs_space_dict)
 
@@ -73,18 +73,18 @@ class TrafficEnv(gym.Env):
 
         # Run a few steps to stabilize simulation if needed
         for _ in range(5):
-             sumo_connector.simulation_step()
-             self._simulation_step_count += config.SIMULATION_STEP_LENGTH
+            sumo_connector.simulation_step()
+            self._simulation_step_count += config.SIMULATION_STEP_LENGTH
 
         observation = self._get_observation()
         info = self._get_info() # Return initial info
 
         # Update internal phase tracking after getting initial observation
         for i in range(config.NUM_INTERSECTIONS):
-             tls_id = config.NODE_IDX_TO_INTERSECTION_ID[i]
-             self._current_sumo_phase[i] = sumo_connector.get_traffic_light_phase(tls_id)
-             # Check if initial phase is a green phase defined in ACTION_PHASE_MAP
-             self._last_action_was_green[i] = self._current_sumo_phase[i] in config.ACTION_PHASE_MAP.values()
+            tls_id = config.NODE_IDX_TO_INTERSECTION_ID[i]
+            self._current_sumo_phase[i] = sumo_connector.get_traffic_light_phase(tls_id)
+            # Check if initial phase is a green phase defined in ACTION_PHASE_MAP
+            self._last_action_was_green[i] = self._current_sumo_phase[i] in config.ACTION_PHASE_MAP.values()
 
 
         return observation, info
@@ -110,48 +110,48 @@ class TrafficEnv(gym.Env):
 
             # Check minimum green time constraint ONLY if currently in a green phase
             if is_currently_green and time_in_current_phase < config.MIN_GREEN_TIME:
-                 # Minimum green time not met, continue current phase
-                 # Do not apply agent's action for this intersection yet
-                 continue # Move to next intersection
+                # Minimum green time not met, continue current phase
+                # Do not apply agent's action for this intersection yet
+                continue # Move to next intersection
 
             # Check if action requests a change from the current target green phase
             needs_change = False
             if is_currently_green:
-                 # Agent wants to switch FROM a green phase TO a potentially different one
-                 if target_sumo_phase_idx != current_sumo_phase:
-                      needs_change = True
+                # Agent wants to switch FROM a green phase TO a potentially different one
+                if target_sumo_phase_idx != current_sumo_phase:
+                    needs_change = True
             else:
-                 # Currently in yellow/red, agent wants to transition TO a green phase
-                 # Allow transition regardless of target_sumo_phase_idx vs current_sumo_phase
-                 needs_change = True
+                # Currently in yellow/red, agent wants to transition TO a green phase
+                # Allow transition regardless of target_sumo_phase_idx vs current_sumo_phase
+                needs_change = True
 
 
             if needs_change:
-                 applied_action_flags[i] = True # Mark that we are changing this light
+                applied_action_flags[i] = True # Mark that we are changing this light
 
-                 # If currently green, insert yellow phase first
-                 if is_currently_green:
-                     # Find the yellow phase corresponding to the current green phase
-                     # This requires knowledge of SUMO phase definitions (e.g., phase N+1 is yellow for phase N)
-                     yellow_phase_idx = current_sumo_phase + 1 # COMMON convention, adjust if needed
-                     sumo_connector.set_traffic_light_phase(tls_id, yellow_phase_idx)
-                     # Let yellow phase run for YELLOW_TIME seconds
-                     for _ in range(int(config.YELLOW_TIME / config.SIMULATION_STEP_LENGTH)):
-                         if not sumo_connector.simulation_step(): return self._handle_sim_error()
-                         self._simulation_step_count += config.SIMULATION_STEP_LENGTH
-                         # Intermediate reward calculation could happen here if needed
+                # If currently green, insert yellow phase first
+                if is_currently_green:
+                    # Find the yellow phase corresponding to the current green phase
+                    # This requires knowledge of SUMO phase definitions (e.g., phase N+1 is yellow for phase N)
+                    yellow_phase_idx = current_sumo_phase + 1 # COMMON convention, adjust if needed
+                    sumo_connector.set_traffic_light_phase(tls_id, yellow_phase_idx)
+                    # Let yellow phase run for YELLOW_TIME seconds
+                    for _ in range(int(config.YELLOW_TIME / config.SIMULATION_STEP_LENGTH)):
+                        if not sumo_connector.simulation_step(): return self._handle_sim_error()
+                        self._simulation_step_count += config.SIMULATION_STEP_LENGTH
+                        # Intermediate reward calculation could happen here if needed
 
-                     # Now set the target green phase
-                     sumo_connector.set_traffic_light_phase(tls_id, target_sumo_phase_idx)
-                     self._current_sumo_phase[i] = target_sumo_phase_idx # Update internal record
-                     self._time_since_last_action[i] = 0 # Reset timer for new green phase
-                     self._last_action_was_green[i] = True # Mark as green phase active
+                    # Now set the target green phase
+                    sumo_connector.set_traffic_light_phase(tls_id, target_sumo_phase_idx)
+                    self._current_sumo_phase[i] = target_sumo_phase_idx # Update internal record
+                    self._time_since_last_action[i] = 0 # Reset timer for new green phase
+                    self._last_action_was_green[i] = True # Mark as green phase active
 
-                 else: # Currently yellow/red, directly set target green phase
-                     sumo_connector.set_traffic_light_phase(tls_id, target_sumo_phase_idx)
-                     self._current_sumo_phase[i] = target_sumo_phase_idx
-                     self._time_since_last_action[i] = 0
-                     self._last_action_was_green[i] = True
+                else: # Currently yellow/red, directly set target green phase
+                    sumo_connector.set_traffic_light_phase(tls_id, target_sumo_phase_idx)
+                    self._current_sumo_phase[i] = target_sumo_phase_idx
+                    self._time_since_last_action[i] = 0
+                    self._last_action_was_green[i] = True
 
         # --- Simulate Remaining Time in Decision Interval ---
         start_step = self._simulation_step_count
@@ -168,21 +168,21 @@ class TrafficEnv(gym.Env):
             # Increment timers for intersections that didn't just change phase
             for i in range(config.NUM_INTERSECTIONS):
                 if not applied_action_flags[i]:
-                     self._time_since_last_action[i] += config.SIMULATION_STEP_LENGTH
+                    self._time_since_last_action[i] += config.SIMULATION_STEP_LENGTH
                 # Check if the current phase is still the expected green phase
                 # SUMO might auto-transition if max duration is hit
                 tls_id = config.NODE_IDX_TO_INTERSECTION_ID[i]
                 live_phase = sumo_connector.get_traffic_light_phase(tls_id)
                 if live_phase != self._current_sumo_phase[i]:
-                     # Phase changed unexpectedly (e.g., max time, or it's now yellow)
-                     self._current_sumo_phase[i] = live_phase
-                     self._time_since_last_action[i] = config.SIMULATION_STEP_LENGTH # Just started this phase
-                     self._last_action_was_green[i] = live_phase in config.ACTION_PHASE_MAP.values()
+                    # Phase changed unexpectedly (e.g., max time, or it's now yellow)
+                    self._current_sumo_phase[i] = live_phase
+                    self._time_since_last_action[i] = config.SIMULATION_STEP_LENGTH # Just started this phase
+                    self._last_action_was_green[i] = live_phase in config.ACTION_PHASE_MAP.values()
                 elif self._last_action_was_green[i]:
-                     # If phase didn't change AND it was green, increment timer
-                     # This line seems redundant with the increment in applied_action_flags[i] loop?
-                     # Let's ensure timers only increment once per step correctly
-                     pass # Timer was incremented above if flag was false
+                    # If phase didn't change AND it was green, increment timer
+                    # This line seems redundant with the increment in applied_action_flags[i] loop?
+                    # Let's ensure timers only increment once per step correctly
+                    pass # Timer was incremented above if flag was false
 
             # Re-evaluate timers for those lights that DID change this step
             # Their timer starts AFTER the yellow phase (if any)
@@ -242,8 +242,8 @@ class TrafficEnv(gym.Env):
             obs_dict['edge_attr'] = pyg_data.edge_attr.numpy()
         else:
             # Need to provide edge_attr even if not used, matching space def
-             num_edges = pyg_data.edge_index.shape[1]
-             obs_dict['edge_attr'] = np.zeros((num_edges, config.NUM_EDGE_FEATURES), dtype=np.float32)
+            num_edges = pyg_data.edge_index.shape[1]
+            obs_dict['edge_attr'] = np.zeros((num_edges, config.NUM_EDGE_FEATURES), dtype=np.float32)
 
 
         # Return the PyG object directly, assuming SB3 Feature Extractor handles it.
@@ -283,18 +283,18 @@ class TrafficEnv(gym.Env):
         return info
 
     def _handle_sim_error(self):
-         # Called if sumo_connector.simulation_step() returns False
-         print("Simulation error detected. Ending episode.")
-         # Return dummy values consistent with Gym API
-         # Observation should be valid based on last successful step or reset state
-         obs = self._get_observation() # Get last valid state
-         reward = config.GRIDLOCK_PENALTY # Penalize heavily
-         terminated = True # End episode due to error
-         truncated = True # Indicate abnormal termination
-         info = self._get_info()
-         info["error"] = "SUMO simulation connection lost or errored."
-         sumo_connector.close_simulation() # Ensure cleanup
-         return obs, reward, terminated, truncated, info
+        # Called if sumo_connector.simulation_step() returns False
+        print("Simulation error detected. Ending episode.")
+        # Return dummy values consistent with Gym API
+        # Observation should be valid based on last successful step or reset state
+        obs = self._get_observation() # Get last valid state
+        reward = config.GRIDLOCK_PENALTY # Penalize heavily
+        terminated = True # End episode due to error
+        truncated = True # Indicate abnormal termination
+        info = self._get_info()
+        info["error"] = "SUMO simulation connection lost or errored."
+        sumo_connector.close_simulation() # Ensure cleanup
+        return obs, reward, terminated, truncated, info
 
 
     def render(self):

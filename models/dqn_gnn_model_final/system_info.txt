@@ -1,0 +1,9 @@
+- OS: Linux-5.15.0-97-generic-x86_64-with-glibc2.35 # 107-Ubuntu SMP Wed Feb 7 13:26:48 UTC 2024
+- Python: 3.10.9
+- Stable-Baselines3: 2.3.0a3
+- PyTorch: 2.2.0+cpu
+- GPU Enabled: False
+- Numpy: 1.24.4
+- Cloudpickle: 3.0.0
+- Gymnasium: 0.29.1
+- OpenAI Gym: 0.26.2

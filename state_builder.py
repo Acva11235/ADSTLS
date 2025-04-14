@@ -88,17 +88,17 @@ def build_state():
         # Example: If phase 0 is NS Green, phase 2 is EW Green
         phase_mask = [0.0] * config.NUM_ACTIONS_PER_INTERSECTION
         for action_idx, sumo_phase in config.ACTION_PHASE_MAP.items():
-             if current_phase_idx == sumo_phase:
-                 phase_mask[action_idx] = 1.0
-                 break # Assuming one green phase active at a time for actions
+            if current_phase_idx == sumo_phase:
+                phase_mask[action_idx] = 1.0
+                break # Assuming one green phase active at a time for actions
         # Handle yellow/other phases if necessary (e.g., map to all zeros or previous green)
         # If no mapped phase found (e.g., yellow), maybe keep previous state or use zeros?
         # Using zeros if not explicitly mapped:
         if sum(phase_mask) == 0:
-             # If it's yellow, we might want state to reflect previous green
-             # This requires more complex state tracking in the environment
-             # For now, zeros indicate non-actionable phase (like yellow)
-             pass
+            # If it's yellow, we might want state to reflect previous green
+            # This requires more complex state tracking in the environment
+            # For now, zeros indicate non-actionable phase (like yellow)
+            pass
 
 
         # 2. Elapsed Time in Phase (Normalized)
@@ -132,11 +132,11 @@ def build_state():
         node_features = phase_mask + [elapsed_norm, queue_sum_norm, max_queue_norm, wait_time_norm]
         # Verify feature count matches config.NUM_NODE_FEATURES
         if len(node_features) != config.NUM_NODE_FEATURES:
-             print(f"Warning: Feature count mismatch. Expected {config.NUM_NODE_FEATURES}, got {len(node_features)}")
-             # Adjust padding or fix calculation
-             # Example padding:
-             node_features.extend([0.0] * (config.NUM_NODE_FEATURES - len(node_features)))
-             node_features = node_features[:config.NUM_NODE_FEATURES]
+            print(f"Warning: Feature count mismatch. Expected {config.NUM_NODE_FEATURES}, got {len(node_features)}")
+            # Adjust padding or fix calculation
+            # Example padding:
+            node_features.extend([0.0] * (config.NUM_NODE_FEATURES - len(node_features)))
+            node_features = node_features[:config.NUM_NODE_FEATURES]
 
 
         node_features_list.append(node_features)
@@ -174,15 +174,15 @@ def build_state():
             edge_features_list.append(edge_features)
 
         if edge_features_list:
-             # Verify feature count
-             if len(edge_features_list[0]) != config.NUM_EDGE_FEATURES:
-                  print(f"Warning: Edge Feature count mismatch. Expected {config.NUM_EDGE_FEATURES}, got {len(edge_features_list[0])}")
-                  # Adjust or fix
-                  for i in range(len(edge_features_list)):
-                       edge_features_list[i].extend([0.0] * (config.NUM_EDGE_FEATURES - len(edge_features_list[i])))
-                       edge_features_list[i] = edge_features_list[i][:config.NUM_EDGE_FEATURES]
+            # Verify feature count
+            if len(edge_features_list[0]) != config.NUM_EDGE_FEATURES:
+                print(f"Warning: Edge Feature count mismatch. Expected {config.NUM_EDGE_FEATURES}, got {len(edge_features_list[0])}")
+                # Adjust or fix
+                for i in range(len(edge_features_list)):
+                    edge_features_list[i].extend([0.0] * (config.NUM_EDGE_FEATURES - len(edge_features_list[i])))
+                    edge_features_list[i] = edge_features_list[i][:config.NUM_EDGE_FEATURES]
 
-             edge_attr = torch.tensor(edge_features_list, dtype=torch.float)
+            edge_attr = torch.tensor(edge_features_list, dtype=torch.float)
 
 
     # --- Assemble PyG Data Object ---
