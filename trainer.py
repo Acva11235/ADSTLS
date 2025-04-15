@@ -137,23 +137,6 @@ def evaluate_agent(model_path, num_episodes=10, use_gui=False):
         print(f"Average Episode Length: {mean_length:.2f}")
         print(f"Average Step Waiting Time: {mean_wait_time:.2f}")
         print(f"Average Step Queue Length: {mean_queue_length:.2f}")
-
-        # Optional: Save results to a file
-        results_df = pd.DataFrame({
-            'episode': list(range(1, len(all_episode_rewards) + 1)),
-            'reward': all_episode_rewards,
-            'length': all_episode_lengths,
-            'avg_wait_time': all_episode_avg_wait_times,
-            'avg_queue_length': all_episode_avg_queue_lengths
-        })
-        results_filename = f"evaluation_results_{os.path.basename(model_path).replace('.zip', '')}.csv"
-        results_path = os.path.join(os.path.dirname(model_path), results_filename) # Save near the model
-        try:
-            results_df.to_csv(results_path, index=False)
-            print(f"Evaluation results saved to: {results_path}")
-        except Exception as e:
-            print(f"Error saving evaluation results: {e}")
-
     else:
         print("No episodes completed successfully for evaluation.")
 
